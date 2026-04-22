@@ -15,7 +15,8 @@ X = df[['Protocol', 'Size']]
 
 # 3. Initialize the Isolation Forest
 # 'contamination' is the % of traffic we expect to be 'bad' (e.g., 5%)
-model = IsolationForest(contamination=0.05, random_state=42)
+# Change this line from 0.03 to 0.2 (or even 0.3)
+model = IsolationForest(contamination=0.2, random_state=42)
 
 # 4. Train and Predict
 df['anomaly_score'] = model.fit_predict(X)
