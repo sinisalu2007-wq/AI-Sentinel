@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
-# 1. Load the data you captured on your EliteBook
+# 1. Load the data you captured on your laptop
 try:
     df = pd.read_csv('data/network_log.csv')
 except FileNotFoundError:
@@ -15,7 +15,6 @@ X = df[['Protocol', 'Size']]
 
 # 3. Initialize the Isolation Forest
 # 'contamination' is the % of traffic we expect to be 'bad' (e.g., 5%)
-# Change this line from 0.03 to 0.2 (or even 0.3)
 model = IsolationForest(contamination=0.2, random_state=42)
 
 # 4. Train and Predict
@@ -29,5 +28,5 @@ print(f"⚠️ Potential Threats Detected: {len(anomalies)}")
 print("\n--- Details of Suspicious Activity ---")
 print(anomalies)
 
-# Save the findings for your PHP Dashboard to read
-df.to_csv('data/anomaly_results.csv', index=False)
+# Save the findings for my PHP Dashboard to read
+df.to_csv('data/anomaly_results.csv', index=False, mode='w')

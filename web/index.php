@@ -1,4 +1,11 @@
 <?php
+// STEP 1: SECURITY CHECK FIRST!
+session_start();
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header("Location: login.php");
+    exit;
+}
+
 $file = '../data/anomaly_results.csv';
 $data = [];
 
@@ -7,7 +14,9 @@ if (file_exists($file)) {
     if (($handle = fopen($file, "r")) !== FALSE) {
         $headers = fgetcsv($handle, 1000, ",");
         while (($data_row = fgetcsv($handle, 1000, ",")) !== FALSE) {
-            $data[] = array_combine($headers, $data_row);
+            if(count($headers) == count($data_row)) {
+                $data[] = array_combine($headers, $data_row);
+            }
         }
         fclose($handle);
     }
@@ -17,22 +26,38 @@ if (file_exists($file)) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>AI-Sentinel Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .threat-row { background-color: #f8d7da !important; color: #721c24; font-weight: bold; }
-        .safe-row { background-color: #d4edda !important; color: #155724; }
+        body { background-color: #121212; color: white; } /* Dark mode looks more professional for security */
+        .card { background-color: #1e1e1e; border: none; }
+        .table { color: white; }
+        .threat-row { background-color: #441111 !important; color: #ff9999 !important; font-weight: bold; }
+        .safe-row { background-color: #113311 !important; color: #99ff99 !important; }
+        .btn-logout { position: absolute; top: 20px; right: 20px; }
     </style>
+    <script>
+        // Refresh the page every 5 seconds
+        setTimeout(function(){
+           location.reload();
+        }, 5000);
+    </script>
 </head>
 <body>
+
+<a href="logout.php" class="btn btn-outline-danger btn-sm btn-logout">Logout</a>
+
 <div class="container mt-5">
     <h2 class="mb-4">🛡️ AI-Sentinel: Network Security Monitor</h2>
     
     <div class="card shadow">
-        <div class="card-header bg-dark text-white">Live Traffic Analysis</div>
+        <div class="card-header bg-primary text-white d-flex justify-content-between">
+            <span>Live Traffic Analysis</span>
+            <small>Auto-refreshing every 5s</small>
+        </div>
         <div class="card-body">
-            <table class="table table-bordered">
+            <table class="table table-hover">
                 <thead>
                     <tr>
                         <th>Time</th>
@@ -40,17 +65,28 @@ if (file_exists($file)) {
                         <th>Destination IP</th>
                         <th>Protocol</th>
                         <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($data as $row): ?>
-                        <?php $is_anomaly = ($row['anomaly_score'] == -1); ?>
+                    <?php foreach (array_reverse($data) as $row): // array_reverse shows newest items first ?>
+                        <?php 
+                            $is_anomaly = ($row['anomaly_score'] == -1); 
+                            // Make time readable
+                            $readable_time = date("H:i:s", (int)$row['Time']);
+                        ?>
                         <tr class="<?= $is_anomaly ? 'threat-row' : 'safe-row' ?>">
-                            <td><?= $row['Time'] ?></td>
+                            <td><?= $readable_time ?></td>
                             <td><?= $row['Source'] ?></td>
                             <td><?= $row['Destination'] ?></td>
                             <td><?= $row['Protocol'] ?></td>
                             <td><?= $is_anomaly ? '🚨 THREAT DETECTED' : '✅ SECURE' ?></td>
+                            <td>
+                                <form method="POST" action="block_handler.php">
+                                    <input type="hidden" name="ip_to_block" value="<?= $row['Source'] ?>">
+                                    <button type="submit" class="btn btn-danger btn-sm" <?= $is_anomaly ? '' : 'disabled' ?>>Block IP</button>
+                                </form>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
